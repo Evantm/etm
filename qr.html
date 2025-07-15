@@ -9,19 +9,16 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      color: #333;
+      background: #f9fbfd;
+      color: #222;
       max-width: 600px;
-      margin: 2rem auto;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
-      background-color: white;
+      margin: 0 auto;
+      padding: 1rem;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     label {
@@ -30,34 +27,30 @@
       font-weight: bold;
     }
 
-    input[type="text"],
-    input[type="number"],
-    select {
+    input, select {
       width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.25rem;
+      padding: 0.6rem;
+      margin-top: 0.3rem;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 1rem;
     }
 
     button {
       margin-top: 2rem;
       width: 100%;
-      background-color: #1d72b8;
+      background-color: #1e88e5;
       color: white;
       padding: 0.75rem;
       font-size: 1rem;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
     }
 
     button:hover {
-      background-color: #155d8b;
-    }
-
-    .options {
-      margin-top: 1rem;
+      background-color: #1565c0;
     }
 
     .output {
@@ -69,52 +62,79 @@
       color: red;
       margin-top: 1rem;
     }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
+
   <h1>QR & Barcode Generator</h1>
 
-  <label>
-    Code Type:
-    <select id="codeType">
-      <option value="">-- Select --</option>
-      <option value="qr">QR Code</option>
-      <option value="barcode">Barcode</option>
+  <label for="codeType">Code Type</label>
+  <select id="codeType">
+    <option value="qr">QR Code</option>
+    <option value="barcode">Barcode</option>
+  </select>
+
+  <div id="qrOptions">
+    <label for="qrMode">QR Code Content Type</label>
+    <select id="qrMode">
+      <option value="text">Text or URL</option>
+      <option value="tel">Phone (tel:)</option>
+      <option value="mailto">Email (mailto:)</option>
+      <option value="sms">SMS (sms:)</option>
+      <option value="geo">Geo Location</option>
+      <option value="wifi">Wi-Fi Credentials</option>
     </select>
-  </label>
 
-  <label id="inputLabel">
-    Text or Link:
-    <input type="text" id="inputText" placeholder="e.g. https://example.com" />
-  </label>
+    <div id="qrInputGroup">
+      <label id="qrInputLabel">Enter text</label>
+      <input type="text" id="qrInput" placeholder="e.g. https://example.com" />
+    </div>
 
-  <!-- QR Options -->
-  <div id="qrOptions" class="options" style="display:none;">
-    <label>
-      Size (px):
-      <input type="number" id="qrSize" value="200" min="100" />
-    </label>
-    <label>
-      Error Correction:
-      <select id="qrError">
-        <option value="L">L (Low)</option>
-        <option value="M">M (Medium)</option>
-        <option value="Q">Q (Quartile)</option>
-        <option value="H">H (High)</option>
+    <div id="wifiInputs" class="hidden">
+      <label>SSID</label>
+      <input type="text" id="wifiSsid" placeholder="e.g. MyWiFi" />
+      <label>Password</label>
+      <input type="text" id="wifiPassword" placeholder="e.g. mypassword123" />
+      <label>Encryption</label>
+      <select id="wifiEncryption">
+        <option value="WPA">WPA/WPA2</option>
+        <option value="WEP">WEP</option>
+        <option value="nopass">None</option>
       </select>
-    </label>
+    </div>
+
+    <label for="qrSize">Size (px)</label>
+    <input type="number" id="qrSize" value="200" min="100" />
+
+    <label for="qrError">Error Correction Level</label>
+    <select id="qrError">
+      <option value="L">L (Low)</option>
+      <option value="M">M (Medium)</option>
+      <option value="Q">Q (Quartile)</option>
+      <option value="H">H (High)</option>
+    </select>
   </div>
 
-  <!-- Barcode Options -->
-  <div id="barcodeOptions" class="options" style="display:none;">
-    <label>
-      Barcode Standard:
-      <select id="barcodeType">
-        <option value="EAN13">EAN-13</option>
-        <option value="CODE128">Code 128</option>
-        <option value="UPC">UPC-A</option>
-      </select>
-    </label>
+  <div id="barcodeOptions" class="hidden">
+    <label>Barcode Type</label>
+    <select id="barcodeType">
+      <option value="EAN13">EAN-13</option>
+      <option value="UPC">UPC-A</option>
+      <option value="CODE128">Code 128</option>
+    </select>
+
+    <label>Barcode Data</label>
+    <input type="text" id="barcodeInput" placeholder="e.g. 123456789012" />
   </div>
 
   <button onclick="generate()">Generate</button>
@@ -123,81 +143,110 @@
   <div class="error" id="error"></div>
 
   <script>
-    const codeTypeSelect = document.getElementById('codeType');
+    const codeType = document.getElementById('codeType');
     const qrOptions = document.getElementById('qrOptions');
+    const qrMode = document.getElementById('qrMode');
+    const qrInputGroup = document.getElementById('qrInputGroup');
+    const qrInput = document.getElementById('qrInput');
+    const qrInputLabel = document.getElementById('qrInputLabel');
+    const wifiInputs = document.getElementById('wifiInputs');
     const barcodeOptions = document.getElementById('barcodeOptions');
+    const barcodeInput = document.getElementById('barcodeInput');
     const output = document.getElementById('output');
     const error = document.getElementById('error');
-    const inputLabel = document.getElementById('inputLabel');
-    const inputText = document.getElementById('inputText');
 
-    codeTypeSelect.addEventListener('change', () => {
-      const type = codeTypeSelect.value;
-      qrOptions.style.display = type === 'qr' ? 'block' : 'none';
-      barcodeOptions.style.display = type === 'barcode' ? 'block' : 'none';
-      inputLabel.innerText = type === 'barcode'
-        ? 'Data (digits only for EAN-13/UPC):'
-        : 'Text or Link:';
-      inputLabel.appendChild(inputText); // Keep input in DOM
-      inputText.placeholder = type === 'barcode' ? 'e.g. 123456789012' : 'e.g. https://example.com';
+    function updateUI() {
+      const isQR = codeType.value === 'qr';
+      qrOptions.classList.toggle('hidden', !isQR);
+      barcodeOptions.classList.toggle('hidden', isQR);
       output.innerHTML = '';
       error.innerText = '';
-    });
+    }
+
+    function updateQRInput() {
+      const mode = qrMode.value;
+      wifiInputs.classList.toggle('hidden', mode !== 'wifi');
+      qrInputGroup.classList.toggle('hidden', mode === 'wifi');
+      qrInputLabel.innerText = {
+        text: 'Enter text or URL',
+        tel: 'Phone number',
+        mailto: 'Email address',
+        sms: 'Phone number (SMS)',
+        geo: 'Latitude,Longitude (e.g. 37.77,-122.41)',
+        wifi: ''
+      }[mode];
+      qrInput.placeholder = {
+        text: 'https://example.com',
+        tel: '1234567890',
+        mailto: 'user@example.com',
+        sms: '1234567890',
+        geo: '37.7749,-122.4194',
+        wifi: ''
+      }[mode];
+    }
+
+    codeType.addEventListener('change', updateUI);
+    qrMode.addEventListener('change', updateQRInput);
 
     function calculateEAN13CheckDigit(data) {
       if (!/^\d{12}$/.test(data)) return data;
-      const sum = data.split('').reduce((acc, digit, idx) =>
-        acc + parseInt(digit) * (idx % 2 === 0 ? 1 : 3), 0);
+      const sum = data.split('').reduce((acc, digit, i) => acc + digit * (i % 2 ? 3 : 1), 0);
       const check = (10 - (sum % 10)) % 10;
       return data + check;
     }
 
     function generate() {
-      const input = inputText.value.trim();
-      const type = codeTypeSelect.value;
+      const type = codeType.value;
       output.innerHTML = '';
       error.innerText = '';
 
-      if (!input) {
-        error.innerText = 'Please enter valid input.';
-        return;
-      }
-
       if (type === 'qr') {
-        const size = parseInt(document.getElementById('qrSize').value);
+        const size = +document.getElementById('qrSize').value;
         const ec = document.getElementById('qrError').value;
-        const qrDiv = document.createElement('div');
-        output.appendChild(qrDiv);
-        new QRCode(qrDiv, {
-          text: input,
-          width: size,
-          height: size,
-          correctLevel: QRCode.CorrectLevel[ec]
-        });
-      } else if (type === 'barcode') {
-        const barcodeType = document.getElementById('barcodeType').value;
-        let value = input;
+        const mode = qrMode.value;
+        let data = '';
 
-        if (barcodeType === 'EAN13') {
-          if (!/^\d{12}$/.test(value)) {
-            error.innerText = 'EAN-13 requires exactly 12 digits (check digit is auto-generated).';
-            return;
-          }
-          value = calculateEAN13CheckDigit(value);
+        if (mode === 'wifi') {
+          const ssid = document.getElementById('wifiSsid').value;
+          const pass = document.getElementById('wifiPassword').value;
+          const enc = document.getElementById('wifiEncryption').value;
+          if (!ssid) return error.innerText = 'SSID is required.';
+          data = `WIFI:T:${enc};S:${ssid};P:${pass};;`;
+        } else {
+          const input = qrInput.value.trim();
+          if (!input) return error.innerText = 'Please enter input.';
+          const prefix = {
+            text: '',
+            tel: 'tel:',
+            mailto: 'mailto:',
+            sms: 'sms:',
+            geo: 'geo:'
+          }[mode];
+          data = prefix + input;
         }
 
-        if (barcodeType === 'UPC') {
-          if (!/^\d{11}$/.test(value)) {
-            error.innerText = 'UPC-A requires exactly 11 digits (check digit is auto-generated).';
-            return;
-          }
-          value = calculateEAN13CheckDigit('0' + value).substring(1); // Strip prepended 0
+        const div = document.createElement('div');
+        output.appendChild(div);
+        new QRCode(div, { text: data, width: size, height: size, correctLevel: QRCode.CorrectLevel[ec] });
+
+      } else if (type === 'barcode') {
+        const format = document.getElementById('barcodeType').value;
+        let value = barcodeInput.value.trim();
+        if (!value) return error.innerText = 'Please enter barcode data.';
+
+        if (format === 'EAN13') {
+          if (!/^\d{12}$/.test(value)) return error.innerText = 'EAN-13 requires 12 digits.';
+          value = calculateEAN13CheckDigit(value);
+        }
+        if (format === 'UPC') {
+          if (!/^\d{11}$/.test(value)) return error.innerText = 'UPC-A requires 11 digits.';
+          value = calculateEAN13CheckDigit('0' + value).substring(1);
         }
 
         try {
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           JsBarcode(svg, value, {
-            format: barcodeType,
+            format,
             displayValue: true,
             lineColor: '#000',
             fontSize: 18,
@@ -206,12 +255,14 @@
           });
           output.appendChild(svg);
         } catch (e) {
-          error.innerText = 'Error generating barcode: ' + e.message;
+          error.innerText = 'Barcode generation error: ' + e.message;
         }
-      } else {
-        error.innerText = 'Please select a code type.';
       }
     }
+
+    // Initialize defaults
+    updateUI();
+    updateQRInput();
   </script>
 </body>
 </html>
